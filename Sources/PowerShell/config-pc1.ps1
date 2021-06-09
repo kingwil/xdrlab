@@ -36,6 +36,7 @@ Configuration config-pc1
 
         PendingReboot RebootAfterDomainJoin
         {
+            DependsOn = '[Computer]JoinDomain'
             Name = 'DomainJoin'
         }
     }

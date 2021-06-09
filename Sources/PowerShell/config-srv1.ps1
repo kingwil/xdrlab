@@ -36,6 +36,7 @@ Configuration config-srv1
 
         PendingReboot RebootAfterDomainJoin
         {
+            DependsOn = '[Computer]JoinDomain'
             Name = 'DomainJoin'
         }
     }

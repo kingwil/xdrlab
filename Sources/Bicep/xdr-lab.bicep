@@ -9,12 +9,11 @@ param AdminUser string = 'LabAdmin'
 param VMSize string = 'Standard_D2s_v3'
 
 var vm_dc1_nic_name = 'srv-dc1-nic'
+var vm_srv1_nic_name = 'srv-app1-nic'
+var vm_pc1_nic_name = 'pc-01-nic'
+var vm_pc2_nic_name = 'pc-02-nic'
+
 var vm_dc1_name = 'srv-dc1'
-
-var vm_srv1_nic_name = 'srv-app1'
-var vm_pc1_nic_name = 'pc-01'
-var vm_pc2_nic_name = 'pc-02'
-
 var vm_srv1_name = 'srv-app1'
 var vm_pc1_name = 'pc-01'
 var vm_pc2_name = 'pc-02'
@@ -22,8 +21,8 @@ var vm_pc2_name = 'pc-02'
 var vnet_name = 'test-vnet'
 var pip_name = 'bastion-pip'
 var subnet_name = 'tier0-subnet'
-var dc_ip = '10.0.2.5'
-var srv1_ip = '10.0.2.6'
+var dc_ip = '10.0.2.100'
+var srv1_ip = '10.0.2.101'
 var bastion_name = 'xdr-bastion'
 
 resource pip_resource 'Microsoft.Network/publicIPAddresses@2020-11-01' = {
@@ -58,6 +57,12 @@ resource vnet_resource 'Microsoft.Network/virtualNetworks@2020-04-01' = {
     addressSpace: {
       addressPrefixes: [
         '10.0.0.0/16'
+      ]
+    }
+    dhcpOptions: {
+      dnsServers: [
+        dc_ip
+        '168.63.129.16'
       ]
     }
   }
@@ -129,7 +134,6 @@ resource nic_vm_srv1_resource 'Microsoft.Network/networkInterfaces@2020-04-01' =
   name: vm_srv1_nic_name
   location: resourceGroup().location
   dependsOn: [
-    pip_resource
     subnet_resource
   ]
   properties: {
@@ -415,7 +419,7 @@ resource vm_dc1_dsc_extension_resource 'Microsoft.Compute/virtualMachines/extens
     autoUpgradeMinorVersion: true
     settings: {
       configuration: {
-        url: 'https://raw.githubusercontent.com/kingwil/xdrlab/Sources/DSC/config-adds.ps1.zip'
+        url: 'https://github.com/kingwil/xdrlab/raw/main/Sources/DSC/config-adds.ps1.zip'
         script: 'config-adds.ps1'
         function: 'config-adds'
       }
@@ -444,15 +448,15 @@ resource vm_srv1_dsc_extension_resource 'Microsoft.Compute/virtualMachines/exten
     autoUpgradeMinorVersion: true
     settings: {
       configuration: {
-        url: 'https://raw.githubusercontent.com/kingwil/xdrlab/Sources/DSC/config-srv1.ps1.zip'
-        script: 'config-pc2.ps1'
-        function: 'config-pc2'
+        url: 'https://github.com/kingwil/xdrlab/raw/main/Sources/DSC/config-srv1.ps1.zip'
+        script: 'config-srv1.ps1'
+        function: 'config-srv1'
       }
     }
     protectedSettings: {
       configurationArguments: {
         Credential: {
-          userName: AdminUser
+          userName: 'CONTOSO\\${AdminUser}'
           password: AdminPassword
         }
       }
@@ -473,15 +477,15 @@ resource vm_pc1_dsc_extension_resource 'Microsoft.Compute/virtualMachines/extens
     autoUpgradeMinorVersion: true
     settings: {
       configuration: {
-        url: 'https://raw.githubusercontent.com/kingwil/xdrlab/Sources/DSC/config-pc1.ps1.zip'
+        url: 'https://github.com/kingwil/xdrlab/raw/main/Sources/DSC/config-pc1.ps1.zip'
         script: 'config-pc1.ps1'
-        function: 'config-pc2'
+        function: 'config-pc1'
       }
     }
     protectedSettings: {
       configurationArguments: {
         Credential: {
-          userName: AdminUser
+          userName: 'CONTOSO\\${AdminUser}'
           password: AdminPassword
         }
       }
@@ -502,7 +506,7 @@ resource vm_pc2_dsc_extension_resource 'Microsoft.Compute/virtualMachines/extens
     autoUpgradeMinorVersion: true
     settings: {
       configuration: {
-        url: 'https://raw.githubusercontent.com/kingwil/xdrlab/Sources/DSC/config-pc2.ps1.zip'
+        url: 'https://github.com/kingwil/xdrlab/raw/main/Sources/DSC/config-pc2.ps1.zip'
         script: 'config-pc2.ps1'
         function: 'config-pc2'
       }
@@ -510,7 +514,7 @@ resource vm_pc2_dsc_extension_resource 'Microsoft.Compute/virtualMachines/extens
     protectedSettings: {
       configurationArguments: {
         Credential: {
-          userName: AdminUser
+          userName: 'CONTOSO\\${AdminUser}'
           password: AdminPassword
         }
       }

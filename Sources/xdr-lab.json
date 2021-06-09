@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.4.1.14562",
-      "templateHash": "14832777996211488586"
+      "version": "0.4.63.48766",
+      "templateHash": "14983486960719268663"
     }
   },
   "parameters": {
@@ -34,18 +34,18 @@
   "functions": [],
   "variables": {
     "vm_dc1_nic_name": "srv-dc1-nic",
+    "vm_srv1_nic_name": "srv-app1-nic",
+    "vm_pc1_nic_name": "pc-01-nic",
+    "vm_pc2_nic_name": "pc-02-nic",
     "vm_dc1_name": "srv-dc1",
-    "vm_srv1_nic_name": "srv-app1",
-    "vm_pc1_nic_name": "pc-01",
-    "vm_pc2_nic_name": "pc-02",
     "vm_srv1_name": "srv-app1",
     "vm_pc1_name": "pc-01",
     "vm_pc2_name": "pc-02",
     "vnet_name": "test-vnet",
     "pip_name": "bastion-pip",
     "subnet_name": "tier0-subnet",
-    "dc_ip": "10.0.2.5",
-    "srv1_ip": "10.0.2.6",
+    "dc_ip": "10.0.2.100",
+    "srv1_ip": "10.0.2.101",
     "bastion_name": "xdr-bastion"
   },
   "resources": [
@@ -85,6 +85,12 @@
         "addressSpace": {
           "addressPrefixes": [
             "10.0.0.0/16"
+          ]
+        },
+        "dhcpOptions": {
+          "dnsServers": [
+            "[variables('dc_ip')]",
+            "168.63.129.16"
           ]
         }
       }
@@ -178,7 +184,6 @@
         "enableIPForwarding": false
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Network/publicIPAddresses', variables('pip_name'))]",
         "[resourceId('Microsoft.Network/virtualNetworks/subnets', split(format('{0}/{1}', variables('vnet_name'), variables('subnet_name')), '/')[0], split(format('{0}/{1}', variables('vnet_name'), variables('subnet_name')), '/')[1])]"
       ]
     },
@@ -450,7 +455,7 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "configuration": {
-            "url": "https://raw.githubusercontent.com/kingwil/xdrlab/Sources/DSC/config-adds.ps1.zip",
+            "url": "https://github.com/kingwil/xdrlab/raw/main/Sources/DSC/config-adds.ps1.zip",
             "script": "config-adds.ps1",
             "function": "config-adds"
           }
@@ -480,15 +485,15 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "configuration": {
-            "url": "https://raw.githubusercontent.com/kingwil/xdrlab/Sources/DSC/config-srv1.ps1.zip",
-            "script": "config-pc2.ps1",
-            "function": "config-pc2"
+            "url": "https://github.com/kingwil/xdrlab/raw/main/Sources/DSC/config-srv1.ps1.zip",
+            "script": "config-srv1.ps1",
+            "function": "config-srv1"
           }
         },
         "protectedSettings": {
           "configurationArguments": {
             "Credential": {
-              "userName": "[parameters('AdminUser')]",
+              "userName": "[format('CONTOSO\\{0}', parameters('AdminUser'))]",
               "password": "[parameters('AdminPassword')]"
             }
           }
@@ -511,15 +516,15 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "configuration": {
-            "url": "https://raw.githubusercontent.com/kingwil/xdrlab/Sources/DSC/config-pc1.ps1.zip",
+            "url": "https://github.com/kingwil/xdrlab/raw/main/Sources/DSC/config-pc1.ps1.zip",
             "script": "config-pc1.ps1",
-            "function": "config-pc2"
+            "function": "config-pc1"
           }
         },
         "protectedSettings": {
           "configurationArguments": {
             "Credential": {
-              "userName": "[parameters('AdminUser')]",
+              "userName": "[format('CONTOSO\\{0}', parameters('AdminUser'))]",
               "password": "[parameters('AdminPassword')]"
             }
           }
@@ -542,7 +547,7 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "configuration": {
-            "url": "https://raw.githubusercontent.com/kingwil/xdrlab/Sources/DSC/config-pc2.ps1.zip",
+            "url": "https://github.com/kingwil/xdrlab/raw/main/Sources/DSC/config-pc2.ps1.zip",
             "script": "config-pc2.ps1",
             "function": "config-pc2"
           }
@@ -550,7 +555,7 @@
         "protectedSettings": {
           "configurationArguments": {
             "Credential": {
-              "userName": "[parameters('AdminUser')]",
+              "userName": "[format('CONTOSO\\{0}', parameters('AdminUser'))]",
               "password": "[parameters('AdminPassword')]"
             }
           }
