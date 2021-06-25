@@ -9,11 +9,11 @@ To be completed.
 
 ARM template will deploy and configure the following:
 
-1x Domain Controller (WS2019) with some user accounts.
-1x Member Server (WS2019)
-2x Windows 10 Clients
-Azure Sentinel Workspace
-Azure Defender Enabled, configured to use Sentinel Workspace
-Update Mangement & Change Tracking Solutions
+* 1x Domain Controller (WS2019) with some user accounts.
+* 1x Member Server (WS2019)
+* 2x Windows 10 Clients
+* Azure Sentinel Workspace
+* Azure Defender Enabled, configured to use Sentinel Workspace
+* Update Mangement & Change Tracking Solutions
 
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fkingwil%2Fxdrlab%2Fmain%2FSources%2Fxdr-subscription.json)
