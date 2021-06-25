@@ -1,3 +1,5 @@
+targetScope = 'resourceGroup'
+
 @description('Password for the Jump and Workstation VMs')
 @secure()
 param AdminPassword string = 'Pass@w0rd$$$'
@@ -7,6 +9,7 @@ param AdminUser string = 'LabAdmin'
 
 @description('Virtual Machine Size')
 param VMSize string = 'Standard_D2s_v3'
+param id string = take(uniqueString('subscription'), 5)
 
 var vm_dc1_nic_name = 'srv-dc1-nic'
 var vm_srv1_nic_name = 'srv-app1-nic'
@@ -435,91 +438,146 @@ resource vm_dc1_dsc_extension_resource 'Microsoft.Compute/virtualMachines/extens
   }
 }
 
-resource vm_srv1_dsc_extension_resource 'Microsoft.Compute/virtualMachines/extensions@2020-12-01' = {
-  name: '${vm_srv1_resource.name}/Microsoft.Powershell.DSC'
+resource vm_srv1_join_extension_resource 'Microsoft.Compute/virtualMachines/extensions@2015-06-15' = {
+  name: '${vm_srv1_resource.name}/JoinDomain'
   dependsOn: [
     vm_dc1_dsc_extension_resource
   ]
   location: resourceGroup().location
   properties: {
-    publisher: 'Microsoft.Powershell'
-    type: 'DSC'
-    typeHandlerVersion: '2.83'
+    publisher: 'Microsoft.Compute'
+    type: 'JsonADDomainExtension'
+    typeHandlerVersion: '1.3'
     autoUpgradeMinorVersion: true
     settings: {
-      configuration: {
-        url: 'https://github.com/kingwil/xdrlab/raw/main/Sources/DSC/config-srv1.ps1.zip'
-        script: 'config-srv1.ps1'
-        function: 'config-srv1'
-      }
+      Name: 'contoso.com'
+      User: 'CONTOSO\\${AdminUser}'
+      Restart: true
+      Options: 3
     }
     protectedSettings: {
-      configurationArguments: {
-        Credential: {
-          userName: 'CONTOSO\\${AdminUser}'
-          password: AdminPassword
-        }
-      }
+      Password: AdminPassword
     }
   }
 }
 
-resource vm_pc1_dsc_extension_resource 'Microsoft.Compute/virtualMachines/extensions@2020-12-01' = {
-  name: '${vm_pc1_resource.name}/Microsoft.Powershell.DSC'
+resource vm_pc1_join_extension_resource 'Microsoft.Compute/virtualMachines/extensions@2015-06-15' = {
+  name: '${vm_pc1_resource.name}/JoinDomain'
   dependsOn: [
     vm_dc1_dsc_extension_resource
   ]
   location: resourceGroup().location
   properties: {
-    publisher: 'Microsoft.Powershell'
-    type: 'DSC'
-    typeHandlerVersion: '2.83'
+    publisher: 'Microsoft.Compute'
+    type: 'JsonADDomainExtension'
+    typeHandlerVersion: '1.3'
     autoUpgradeMinorVersion: true
     settings: {
-      configuration: {
-        url: 'https://github.com/kingwil/xdrlab/raw/main/Sources/DSC/config-pc1.ps1.zip'
-        script: 'config-pc1.ps1'
-        function: 'config-pc1'
-      }
+      Name: 'contoso.com'
+      User: 'CONTOSO\\${AdminUser}'
+      Restart: true
+      Options: 3
     }
     protectedSettings: {
-      configurationArguments: {
-        Credential: {
-          userName: 'CONTOSO\\${AdminUser}'
-          password: AdminPassword
-        }
-      }
+      Password: AdminPassword
     }
   }
 }
 
-resource vm_pc2_dsc_extension_resource 'Microsoft.Compute/virtualMachines/extensions@2020-12-01' = {
-  name: '${vm_pc2_resource.name}/Microsoft.Powershell.DSC'
+resource vm_pc2_join_extension_resource 'Microsoft.Compute/virtualMachines/extensions@2015-06-15' = {
+  name: '${vm_pc2_resource.name}/JoinDomain'
   dependsOn: [
     vm_dc1_dsc_extension_resource
   ]
   location: resourceGroup().location
   properties: {
-    publisher: 'Microsoft.Powershell'
-    type: 'DSC'
-    typeHandlerVersion: '2.83'
+    publisher: 'Microsoft.Compute'
+    type: 'JsonADDomainExtension'
+    typeHandlerVersion: '1.3'
     autoUpgradeMinorVersion: true
     settings: {
-      configuration: {
-        url: 'https://github.com/kingwil/xdrlab/raw/main/Sources/DSC/config-pc2.ps1.zip'
-        script: 'config-pc2.ps1'
-        function: 'config-pc2'
-      }
+      Name: 'contoso.com'
+      User: 'CONTOSO\\${AdminUser}'
+      Restart: true
+      Options: 3
     }
     protectedSettings: {
-      configurationArguments: {
-        Credential: {
-          userName: 'CONTOSO\\${AdminUser}'
-          password: AdminPassword
-        }
-      }
+      Password: AdminPassword
     }
   }
 }
 
+resource la_workspace_resource 'Microsoft.OperationalInsights/workspaces@2020-10-01' = {
+  name: 'xdr${id}'
+  location: resourceGroup().location
+  properties: {
+    sku: {
+      name: 'PerGB2018'
+    }
+  }
+}
 
+resource la_workspace_sentinel_resource 'Microsoft.OperationsManagement/solutions@2015-11-01-preview' = {
+  dependsOn: [
+    la_workspace_resource
+  ]
+  location: resourceGroup().location
+  name: 'SecurityInsights(${la_workspace_resource.name})'
+  plan: {
+    name: 'SecurityInsights'
+    product: 'OMSGallery/SecurityInsights'
+    publisher: 'Microsoft'
+    promotionCode: ''
+  }
+  properties: {
+    workspaceResourceId: la_workspace_resource.id
+  }
+}
+
+resource la_workspace_sentinel_eventcollection_resource 'Microsoft.OperationalInsights/workspaces/dataSources@2020-08-01' = {
+  name: '${la_workspace_resource.name}/SecurityInsightsSecurityEventCollectionConfiguration'
+  dependsOn: [
+    la_workspace_sentinel_resource
+  ]
+  kind: 'SecurityInsightsSecurityEventCollectionConfiguration'
+  properties: {
+    tier: 'All'
+    tierSetMethod: 'Custom'
+  }
+}
+
+resource la_workspace_updates_resource 'Microsoft.OperationsManagement/solutions@2015-11-01-preview' = {
+  dependsOn: [
+    la_workspace_resource
+  ]
+  location: resourceGroup().location
+  name: 'Updates(${la_workspace_resource.name})'
+  plan: {
+    name: 'Updates'
+    product: 'OMSGallery/Updates'
+    publisher: 'Microsoft'
+    promotionCode: ''
+  }
+  properties: {
+    workspaceResourceId: la_workspace_resource.id
+  }
+}
+
+resource la_workspace_changes_resource 'Microsoft.OperationsManagement/solutions@2015-11-01-preview' = {
+  dependsOn: [
+    la_workspace_resource
+  ]
+  location: resourceGroup().location
+  name: 'ChangeTracking(${la_workspace_resource.name})'
+  plan: {
+    name: 'ChangeTracking'
+    product: 'OMSGallery/ChangeTracking'
+    publisher: 'Microsoft'
+    promotionCode: ''
+  }
+  properties: {
+    workspaceResourceId: la_workspace_resource.id
+  }
+}
+
+output la_workspace_resourceId string = la_workspace_resource.id
